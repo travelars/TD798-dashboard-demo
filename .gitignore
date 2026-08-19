@@ -1,0 +1,16 @@
+# Reelle deltagerlister og andre kildeuttrekk skal ALDRI inn i dette repoet.
+# Dashboardet er en demo med utelukkende oppdiktede data.
+*.xlsx
+*.xlsm
+*.csv
+participants_js.json
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Node
+node_modules/

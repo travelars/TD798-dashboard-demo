@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEMO — Sparebankdagene 2026 — booking-dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --primary: #f15b29;
+    --secondary: #122e47;
+    --surface-1: #fcfcfb;
+    --page: #f2f4f6;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --critical: #d03b3b;
+    --delta-up: #006300;
+    --delta-down: #b5391a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+  }
+  .demo-banner {
+    background: repeating-linear-gradient(45deg, var(--primary), var(--primary) 10px, #ffffff 10px, #ffffff 20px);
+    color: var(--secondary);
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    padding: 6px 0;
+    text-transform: uppercase;
+  }
+  .demo-banner span { background: var(--surface-1); padding: 3px 12px; border-radius: 4px; }
+  header { background: var(--secondary); color: #ffffff; padding: 28px 32px 22px; }
+  header h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
+  header .meta { color: #c7d3dd; font-size: 13px; display: flex; gap: 18px; flex-wrap: wrap; }
+  header .meta b { color: #ffffff; }
+  .tabs {
+    display: flex; gap: 4px; padding: 0 32px;
+    background: var(--surface-1); border-bottom: 1px solid var(--gridline);
+  }
+  .tab-btn {
+    border: none; background: transparent; padding: 14px 18px;
+    font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit;
+  }
+  .tab-btn.active { color: var(--secondary); border-bottom-color: var(--primary); }
+  main { padding: 24px 32px 48px; max-width: 1180px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .kpi-label { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
+  .kpi-value { font-size: 30px; font-weight: 700; color: var(--secondary); line-height: 1.1; }
+  .kpi-delta { font-size: 12px; margin-top: 6px; font-weight: 600; }
+  .delta-up { color: var(--delta-up); }
+  .delta-down { color: var(--delta-down); }
+  .panel-block {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 22px;
+  }
+  .panel-block h2 { font-size: 15px; margin: 0 0 4px 0; color: var(--secondary); font-weight: 700; }
+  .panel-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .bar-row {
+    display: grid; grid-template-columns: 220px 1fr 44px;
+    align-items: center; gap: 12px; margin-bottom: 10px; font-size: 13px;
+  }
+  .bar-label { color: var(--text-secondary); }
+  .bar-track { background: var(--gridline); border-radius: 5px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: var(--secondary); }
+  .bar-value { text-align: right; font-weight: 700; color: var(--secondary); font-variant-numeric: tabular-nums; }
+
+  /* --- allotment-matrise --- */
+  .allot-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; }
+  .allot-legend span.item { font-size: 12.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .sw-ok { background: var(--secondary); }
+  .sw-full { background: var(--primary); }
+  .sw-over { background: var(--critical); }
+  .sw-unused { background: var(--gridline); border: 1px solid var(--border); }
+  table.allot { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.allot th, table.allot td {
+    padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--gridline); vertical-align: top;
+  }
+  table.allot thead th {
+    color: var(--secondary); font-weight: 700; background: #f4f6f8; white-space: nowrap; font-size: 12px;
+  }
+  table.allot tr.hotel-head th {
+    background: #eef1f4; color: var(--secondary); font-weight: 700;
+    font-size: 12px; letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .row-room { color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+  .beds-hint { color: var(--text-muted); font-weight: 400; font-size: 11px; white-space: nowrap; }
+  .cell { min-width: 128px; }
+  .cell-nums { font-variant-numeric: tabular-nums; color: var(--text-secondary); margin-bottom: 5px; }
+  .cell-nums b { color: var(--secondary); font-size: 14px; }
+  .cell-note { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+  .cell-empty { color: var(--text-muted); }
+  .meter {
+    position: relative; background: var(--gridline);
+    border-radius: 5px; height: 10px; width: 100%; max-width: 132px;
+  }
+  .meter-fill { height: 100%; border-radius: 5px; background: var(--secondary); }
+  .meter-full { background: var(--primary); }
+  .meter-over { background: var(--critical); }
+  /* overløp: egen geometri, så "over allotment" ikke hviler på farge alene */
+  .meter-spill {
+    position: absolute; top: -2px; right: -7px; width: 5px; height: 14px;
+    border-radius: 2px; background: var(--critical);
+    box-shadow: -2px 0 0 0 var(--surface-1);
+  }
+  .state-full .cell-note { color: var(--primary); font-weight: 700; }
+  .state-over .cell-note { color: var(--critical); font-weight: 700; }
+  .state-over { background: #fdf3f2; }
+  .total-row th, .total-row td { border-top: 2px solid var(--gridline); border-bottom: none; }
+  .total-row th { color: var(--secondary); font-weight: 700; }
+  .panel-note { font-size: 11.5px; color: var(--text-muted); margin-top: 12px; line-height: 1.5; }
+
+  .search-row { margin-bottom: 14px; }
+  .search-row input {
+    width: 100%; max-width: 360px; padding: 9px 12px;
+    border: 1px solid var(--gridline); border-radius: 6px; font-size: 13px; font-family: inherit;
+  }
+  table#participantsTable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table#participantsTable th, table#participantsTable td {
+    padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--gridline);
+  }
+  table#participantsTable th {
+    cursor: pointer; user-select: none; color: var(--secondary);
+    font-weight: 700; background: #f4f6f8; white-space: nowrap;
+  }
+  table#participantsTable th::after { content: ""; opacity: 0.4; margin-left: 4px; }
+  table#participantsTable th.sort-asc::after { content: "▲"; opacity: 1; }
+  table#participantsTable th.sort-desc::after { content: "▼"; opacity: 1; }
+  td.num { text-align: center; }
+  table#participantsTable tr:hover td { background: #fbf3ef; }
+  .badge {
+    display: inline-block; background: var(--primary); color: #fff;
+    font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+  }
+  .row-count { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  footer { text-align: center; font-size: 11.5px; color: var(--text-muted); padding: 18px 0 30px; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><span>DEMO — oppdiktede data — ikke reelle deltagere</span></div>
+
+<header>
+  <h1>Sparebankdagene 2026 — booking-dashboard <span class="badge">DEMO</span></h1>
+  <div class="meta">
+    <div>📍 Ålesund, 15.–17. november 2026</div>
+    <div>Snapshot: <b>19.08.2026</b></div>
+    <div>Første generering: <b>01.08.2026</b></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="deltagere">Deltagerliste</button>
+</div>
+
+<main>
+
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="kpi-grid">
+      
+        <div class="kpi-card">
+          <div class="kpi-label">Totalt påmeldte</div>
+          <div class="kpi-value">224</div>
+          <div class="kpi-delta delta-up">+46 siden 01.08.2026 (178 → 224)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Festmiddag &amp; kickoff</div>
+          <div class="kpi-value">218</div>
+          <div class="kpi-delta delta-up">+47 siden 01.08.2026 (171 → 218)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Fagkonferanse tirsdag</div>
+          <div class="kpi-value">212</div>
+          <div class="kpi-delta delta-up">+47 siden 01.08.2026 (165 → 212)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Stiftelsessamling mandag</div>
+          <div class="kpi-value">68</div>
+          <div class="kpi-delta delta-up">+13 siden 01.08.2026 (55 → 68)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Middag for sparebankstiftelser</div>
+          <div class="kpi-value">52</div>
+          <div class="kpi-delta delta-up">+11 siden 01.08.2026 (41 → 52)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Unike selskaper</div>
+          <div class="kpi-value">96</div>
+          <div class="kpi-delta delta-up">+17 siden 01.08.2026 (79 → 96)</div>
+        </div>
+    </div>
+
+    <div class="panel-block">
+      <h2>Påmeldte pr. programpunkt</h2>
+      <div class="panel-sub">Antall deltagere påmeldt hvert programpunkt.</div>
+      
+        <div class="bar-row">
+          <div class="bar-label">Festmiddag og kickoff</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+          <div class="bar-value">218</div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">Fagkonferanse tirsdag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:97.2%"></div></div>
+          <div class="bar-value">212</div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">Stiftelsessamling mandag</div>
+          <div class="bar-track"><div class="bar-fill" style="width:31.2%"></div></div>
+          <div class="bar-value">68</div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">Middag for sparebankstiftelser</div>
+          <div class="bar-track"><div class="bar-fill" style="width:23.9%"></div></div>
+          <div class="bar-value">52</div>
+        </div>
+    </div>
+
+    <div class="panel-block">
+      <h2>Romfordeling pr. rom pr. natt — booket mot allotment</h2>
+      <div class="panel-sub">Bookede rom av avtalt allotment, pr. hotell, romtype og natt.</div>
+      <div class="allot-legend">
+        <span class="item"><span class="swatch sw-ok"></span>Booket innenfor allotment</span>
+        <span class="item"><span class="swatch sw-full"></span>Fullt / nesten fullt (≥ 95 %)</span>
+        <span class="item"><span class="swatch sw-over"></span>Over eller utenfor allotment</span>
+        <span class="item"><span class="swatch sw-unused"></span>Ubenyttet allotment</span>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="allot">
+        <thead>
+          <tr>
+            <th scope="col">Overnatting / romtype</th>
+            <th scope="col">Natt til 15.11</th>
+            <th scope="col">Natt til 16.11</th>
+            <th scope="col">Natt til 17.11</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr class="hotel-head">
+            <th scope="colgroup" colspan="4">SCANDIC PARKEN</th>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Enkeltrom</th>
+            <td class="cell state-ok" title="SCANDIC PARKEN — Enkeltrom — natt til 15.11: 126 av 150 rom booket (84 %), 24 ledige">
+              <div class="cell-nums"><b>126</b> / 150</div>
+              <div class="meter"><div class="meter-fill " style="width:84%"></div></div>
+              <div class="cell-note">84 % · 24 ledige</div>
+            </td>
+            <td class="cell state-full" title="SCANDIC PARKEN — Enkeltrom — natt til 16.11: 123 av 123 rom booket (100 %), 0 ledige">
+              <div class="cell-nums"><b>123</b> / 123</div>
+              <div class="meter"><div class="meter-fill meter-full" style="width:100%"></div></div>
+              <div class="cell-note">Fullt · 0 ledige</div>
+            </td>
+            <td class="cell state-ok" title="SCANDIC PARKEN — Enkeltrom — natt til 17.11: 16 av 25 rom booket (64 %), 9 ledige">
+              <div class="cell-nums"><b>16</b> / 25</div>
+              <div class="meter"><div class="meter-fill " style="width:64%"></div></div>
+              <div class="cell-note">64 % · 9 ledige</div>
+            </td>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Enkeltrom foredragsholder</th>
+            <td class="cell state-unused" title="SCANDIC PARKEN — Enkeltrom foredragsholder — natt til 15.11: 0 av 10 rom booket (0 %), 10 ledige">
+              <div class="cell-nums"><b>0</b> / 10</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 10 ledige</div>
+            </td>
+            <td class="cell state-unused" title="SCANDIC PARKEN — Enkeltrom foredragsholder — natt til 16.11: 0 av 10 rom booket (0 %), 10 ledige">
+              <div class="cell-nums"><b>0</b> / 10</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 10 ledige</div>
+            </td>
+            <td class="cell state-unused" title="SCANDIC PARKEN — Enkeltrom foredragsholder — natt til 17.11: 0 av 5 rom booket (0 %), 5 ledige">
+              <div class="cell-nums"><b>0</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 5 ledige</div>
+            </td>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Dobbeltrom <span class="beds-hint">2 gjester/rom</span></th>
+            <td class="cell state-ok" title="SCANDIC PARKEN — Dobbeltrom — natt til 15.11: 7 av 10 rom booket (70 %), 3 ledige">
+              <div class="cell-nums"><b>7</b> / 10</div>
+              <div class="meter"><div class="meter-fill " style="width:70%"></div></div>
+              <div class="cell-note">70 % · 3 ledige</div>
+            </td>
+            <td class="cell state-ok" title="SCANDIC PARKEN — Dobbeltrom — natt til 16.11: 6 av 10 rom booket (60 %), 4 ledige">
+              <div class="cell-nums"><b>6</b> / 10</div>
+              <div class="meter"><div class="meter-fill " style="width:60%"></div></div>
+              <div class="cell-note">60 % · 4 ledige</div>
+            </td>
+            <td class="cell state-unused" title="SCANDIC PARKEN — Dobbeltrom — natt til 17.11: 0 av 2 rom booket (0 %), 2 ledige">
+              <div class="cell-nums"><b>0</b> / 2</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 2 ledige</div>
+            </td>
+          </tr>
+
+          <tr class="hotel-head">
+            <th scope="colgroup" colspan="4">HOTEL 1904</th>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Enkeltrom</th>
+            <td class="cell state-ok" title="HOTEL 1904 — Enkeltrom — natt til 15.11: 33 av 40 rom booket (83 %), 7 ledige">
+              <div class="cell-nums"><b>33</b> / 40</div>
+              <div class="meter"><div class="meter-fill " style="width:82.5%"></div></div>
+              <div class="cell-note">83 % · 7 ledige</div>
+            </td>
+            <td class="cell state-ok" title="HOTEL 1904 — Enkeltrom — natt til 16.11: 33 av 36 rom booket (92 %), 3 ledige">
+              <div class="cell-nums"><b>33</b> / 36</div>
+              <div class="meter"><div class="meter-fill " style="width:91.7%"></div></div>
+              <div class="cell-note">92 % · 3 ledige</div>
+            </td>
+            <td class="cell state-over" title="HOTEL 1904 — Enkeltrom — natt til 17.11: 2 rom booket uten allotment">
+              <div class="cell-nums"><b>2</b> / –</div>
+              <div class="meter"><div class="meter-fill meter-over" style="width:100%"></div><span class="meter-spill"></span></div>
+              <div class="cell-note">Utenfor allotment</div>
+            </td>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Dobbeltrom <span class="beds-hint">2 gjester/rom</span></th>
+            <td class="cell state-ok" title="HOTEL 1904 — Dobbeltrom — natt til 15.11: 3 av 5 rom booket (60 %), 2 ledige">
+              <div class="cell-nums"><b>3</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:60%"></div></div>
+              <div class="cell-note">60 % · 2 ledige</div>
+            </td>
+            <td class="cell state-ok" title="HOTEL 1904 — Dobbeltrom — natt til 16.11: 3 av 5 rom booket (60 %), 2 ledige">
+              <div class="cell-nums"><b>3</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:60%"></div></div>
+              <div class="cell-note">60 % · 2 ledige</div>
+            </td>
+            <td class="cell state-ok" title="HOTEL 1904 — Dobbeltrom — natt til 17.11: 1 av 2 rom booket (50 %), 1 ledig">
+              <div class="cell-nums"><b>1</b> / 2</div>
+              <div class="meter"><div class="meter-fill " style="width:50%"></div></div>
+              <div class="cell-note">50 % · 1 ledig</div>
+            </td>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Foredragsholder</th>
+            <td class="cell state-unused" title="HOTEL 1904 — Foredragsholder — natt til 15.11: 0 av 5 rom booket (0 %), 5 ledige">
+              <div class="cell-nums"><b>0</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 5 ledige</div>
+            </td>
+            <td class="cell state-unused" title="HOTEL 1904 — Foredragsholder — natt til 16.11: 0 av 5 rom booket (0 %), 5 ledige">
+              <div class="cell-nums"><b>0</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:0%"></div></div>
+              <div class="cell-note">Ubenyttet · 5 ledige</div>
+            </td>
+            <td class="cell-empty" title="HOTEL 1904 — Foredragsholder — natt til 17.11: ingen allotment, ingen booking">–</td>
+          </tr>
+
+          <tr class="hotel-head">
+            <th scope="colgroup" colspan="4">QUALITY HOTEL ÅLESUND</th>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Enkeltrom</th>
+            <td class="cell state-ok" title="QUALITY HOTEL ÅLESUND — Enkeltrom — natt til 15.11: 2 av 20 rom booket (10 %), 18 ledige">
+              <div class="cell-nums"><b>2</b> / 20</div>
+              <div class="meter"><div class="meter-fill " style="width:10%"></div></div>
+              <div class="cell-note">10 % · 18 ledige</div>
+            </td>
+            <td class="cell state-ok" title="QUALITY HOTEL ÅLESUND — Enkeltrom — natt til 16.11: 2 av 80 rom booket (3 %), 78 ledige">
+              <div class="cell-nums"><b>2</b> / 80</div>
+              <div class="meter"><div class="meter-fill " style="width:2.5%"></div></div>
+              <div class="cell-note">3 % · 78 ledige</div>
+            </td>
+            <td class="cell-empty" title="QUALITY HOTEL ÅLESUND — Enkeltrom — natt til 17.11: ingen allotment, ingen booking">–</td>
+          </tr>
+
+          <tr>
+            <th scope="row" class="row-room">Dobbeltrom <span class="beds-hint">2 gjester/rom</span></th>
+            <td class="cell state-ok" title="QUALITY HOTEL ÅLESUND — Dobbeltrom — natt til 15.11: 1 av 5 rom booket (20 %), 4 ledige">
+              <div class="cell-nums"><b>1</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:20%"></div></div>
+              <div class="cell-note">20 % · 4 ledige</div>
+            </td>
+            <td class="cell state-ok" title="QUALITY HOTEL ÅLESUND — Dobbeltrom — natt til 16.11: 1 av 5 rom booket (20 %), 4 ledige">
+              <div class="cell-nums"><b>1</b> / 5</div>
+              <div class="meter"><div class="meter-fill " style="width:20%"></div></div>
+              <div class="cell-note">20 % · 4 ledige</div>
+            </td>
+            <td class="cell-empty" title="QUALITY HOTEL ÅLESUND — Dobbeltrom — natt til 17.11: ingen allotment, ingen booking">–</td>
+          </tr>
+
+          <tr class="total-row">
+            <th scope="row">Sum rom</th>
+            <td class="cell cell-total"><div class="cell-nums"><b>172</b> / 245</div><div class="cell-note">70 % av allotment</div></td>
+            <td class="cell cell-total"><div class="cell-nums"><b>168</b> / 274</div><div class="cell-note">61 % av allotment</div></td>
+            <td class="cell cell-total"><div class="cell-nums"><b>19</b> / 34</div><div class="cell-note">56 % av allotment</div></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="panel-note">
+        Bookede rom er regnet ut fra innsjekk-/utsjekkdato pr. deltager. Dobbeltrom teller som ett rom pr. to gjester,
+        slik at tallene kan sammenlignes direkte med allotmentet. «–» betyr at romtypen ikke er avtalt for den natten.
+        Allotment-tallene i denne demoen er oppdiktede, men har samme struktur som Qondor-uttrekket.
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-deltagere">
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Søk på navn, firma, e-post, mobil, hotell eller romtype …">
+    </div>
+    <div class="row-count" id="rowCount"></div>
+    <div style="overflow-x:auto;">
+    <table id="participantsTable">
+      <thead>
+        <tr>
+          <th data-sort="navn">Navn</th>
+          <th data-sort="firma">Firma</th>
+          <th data-sort="epost">E-post</th>
+          <th data-sort="mobil">Mobil</th>
+          <th data-sort="hotel">Hotell</th>
+          <th data-sort="rom">Romtype</th>
+          <th data-sort="middag" class="num">Middag stift.</th>
+          <th data-sort="stiftelse" class="num">Stiftelsessaml.</th>
+          <th data-sort="festmiddag" class="num">Festmiddag</th>
+          <th data-sort="fagkonf" class="num">Fagkonf.</th>
+        </tr>
+      </thead>
+      <tbody id="participantsBody"></tbody>
+    </table>
+    </div>
+  </div>
+
+</main>
+
+<footer>DEMO-dashboard generert med Claude — alle navn, firmaer, e-poster, mobilnumre, deltagertall og allotment-tall er oppdiktet og strukturelt (ikke identisk) basert på et reelt eksempel.</footer>
+
+<script>
+const participants = [{"ref":"1130000","navn":"Kari Andersen","firma":"Nordic Trustee","epost":"kari.andersen@nordictrustee.no","mobil":"+47 96507801","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130001","navn":"Torstein Ås","firma":"Vang sparebank","epost":"torstein.as@vangsparebank.no","mobil":"+47 93725801","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130002","navn":"Elin Nygård","firma":"Vang Sparebank","epost":"elin.nygard@vangsparebank.no","mobil":"+47 93659729","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":0,"fagkonf":1},{"ref":"1130003","navn":"Petter Sørensen","firma":"Øst Sparebank","epost":"petter.sorensen@ostsparebank.no","mobil":"+47 96026504","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130004","navn":"Martin Sæther","firma":"Grend sparebank","epost":"martin.saether@grendsparebank.no","mobil":"+47 90689527","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130005","navn":"Trond Eide","firma":"Region banken","epost":"trond.eide@regionbanken.no","mobil":"+47 95137420","hotel":"QUALITY HOTEL ÅLESUND","rom":"Dobbeltrom","hotelStr":"🛌 QUALITY HOTEL ÅLESUND, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130006","navn":"Hanne Vange","firma":"Fjell Sparebank","epost":"hanne.vange@fjellsparebank.no","mobil":"+47 96164788","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130007","navn":"Wenche Aune","firma":"Øst sparebank","epost":"wenche.aune@ostsparebank.no","mobil":"+47 98212474","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130008","navn":"Mathilde Aune","firma":"Li banken","epost":"mathilde.aune@libanken.no","mobil":"+47 97688814","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130009","navn":"Morten Kvale","firma":"Sør sparebank","epost":"morten.kvale@sorsparebank.no","mobil":"+47 97224252","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130010","navn":"Sara Aune","firma":"Vekst banken","epost":"sara.aune@vekstbanken.no","mobil":"+47 90682021","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130011","navn":"Magnus Sundby","firma":"Bygde banken","epost":"magnus.sundby@bygdebanken.no","mobil":"+47 90910414","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130012","navn":"Marte Berg","firma":"Voss sparebank","epost":"marte.berg@vosssparebank.no","mobil":"+47 91838582","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130013","navn":"Tobias Karlsen","firma":"Eika Gruppen","epost":"tobias.karlsen@eikagruppen.no","mobil":"+47 92770111","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130014","navn":"Kristian Sand","firma":"Hav Sparebank","epost":"kristian.sand@havsparebank.no","mobil":"+47 94613610","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130015","navn":"Live Lund","firma":"Vekst Sparebank","epost":"live.lund@vekstsparebank.no","mobil":"+47 93495085","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130016","navn":"Elin Pedersen","firma":"Kyst sparebank","epost":"elin.pedersen@kystsparebank.no","mobil":"+47 94667390","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130017","navn":"Silje Fjeld","firma":"Berg Sparebank","epost":"silje.fjeld@bergsparebank.no","mobil":"+47 98904024","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130018","navn":"Geir Aune","firma":"Sørvest banken","epost":"geir.aune@sorvestbanken.no","mobil":"+47 91755044","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130019","navn":"Aud Waage","firma":"Voss Sparebank","epost":"aud.waage@vosssparebank.no","mobil":"+47 96232169","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130020","navn":"Silje Vold","firma":"Nordøst sparebank","epost":"silje.vold@nordostsparebank.no","mobil":"+47 91365422","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130021","navn":"Thea Strand","firma":"Hav banken","epost":"thea.strand@havbanken.no","mobil":"+47 94972488","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130022","navn":"Hanne Waage","firma":"Voss banken","epost":"hanne.waage@vossbanken.no","mobil":"+47 95245376","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130023","navn":"Henrik Dahl","firma":"Vest Sparebank","epost":"henrik.dahl@vestsparebank.no","mobil":"+47 97251664","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130024","navn":"Wenche Vold","firma":"Ring sparebank","epost":"wenche.vold@ringsparebank.no","mobil":"+47 93812784","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130025","navn":"Erik Andersen","firma":"Fjord banken","epost":"erik.andersen@fjordbanken.no","mobil":"+47 91784469","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130026","navn":"Aud Dahl","firma":"SpareBank 1 Utvikling","epost":"aud.dahl@sparebank1utvikling.no","mobil":"+47 99883317","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130027","navn":"Elias Vold","firma":"Hav Sparebank","epost":"elias.vold@havsparebank.no","mobil":"+47 90236760","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130028","navn":"Martin Aune","firma":"Region Sparebank","epost":"martin.aune@regionsparebank.no","mobil":"+47 90941714","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130029","navn":"Åse Fossum","firma":"Nordøst Sparebank","epost":"ase.fossum@nordostsparebank.no","mobil":"+47 98683593","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130030","navn":"Mathilde Fjeld","firma":"Ring sparebank","epost":"mathilde.fjeld@ringsparebank.no","mobil":"+47 96811360","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130031","navn":"Aksel Fjeld","firma":"Innlandet sparebank","epost":"aksel.fjeld@innlandetsparebank.no","mobil":"+47 99242953","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130032","navn":"Martin Lien","firma":"Kyst banken","epost":"martin.lien@kystbanken.no","mobil":"+47 98505179","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130033","navn":"Elin Strand","firma":"Vekst Sparebank","epost":"elin.strand@vekstsparebank.no","mobil":"+47 90813540","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130034","navn":"Aud Haugen","firma":"Trygg sparebank","epost":"aud.haugen@tryggsparebank.no","mobil":"+47 97591476","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130035","navn":"Vetle Nilsen","firma":"Dal sparebank","epost":"vetle.nilsen@dalsparebank.no","mobil":"+47 92068069","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130036","navn":"Linnea Tveit","firma":"Innlandet Sparebank","epost":"linnea.tveit@innlandetsparebank.no","mobil":"+47 97315750","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130037","navn":"Elise Fossum","firma":"Sol sparebank","epost":"elise.fossum@solsparebank.no","mobil":"+47 98513238","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":0},{"ref":"1130038","navn":"Ole Lund","firma":"Bygde sparebank","epost":"ole.lund@bygdesparebank.no","mobil":"+47 95512216","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130039","navn":"Stian Waage","firma":"Kommunalbanken","epost":"stian.waage@kommunalbanken.no","mobil":"+47 98998559","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130040","navn":"Ragnhild Sørensen","firma":"Heim sparebank","epost":"ragnhild.sorensen@heimsparebank.no","mobil":"+47 97335233","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130041","navn":"Jarle Bråten","firma":"Berg sparebank","epost":"jarle.braten@bergsparebank.no","mobil":"+47 99820246","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130042","navn":"Jarle Fjeld","firma":"Vest sparebank","epost":"jarle.fjeld@vestsparebank.no","mobil":"+47 91789766","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130043","navn":"Espen Solberg","firma":"Heim sparebank","epost":"espen.solberg@heimsparebank.no","mobil":"+47 90715486","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130044","navn":"Henrik Larsen","firma":"Nord banken","epost":"henrik.larsen@nordbanken.no","mobil":"+47 91797106","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130045","navn":"Elias Bakke","firma":"Sør sparebank","epost":"elias.bakke@sorsparebank.no","mobil":"+47 91467498","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130046","navn":"Ragnhild Nilsen","firma":"Elv sparebank","epost":"ragnhild.nilsen@elvsparebank.no","mobil":"+47 95645798","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130047","navn":"Linnea Berg","firma":"By Sparebank","epost":"linnea.berg@bysparebank.no","mobil":"+47 90812152","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130048","navn":"Kari Grande","firma":"Skog banken","epost":"kari.grande@skogbanken.no","mobil":"+47 96927663","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130049","navn":"Arne Sørensen","firma":"Li sparebank","epost":"arne.sorensen@lisparebank.no","mobil":"+47 90807270","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130050","navn":"Magnus Reiten","firma":"Vang Sparebank","epost":"magnus.reiten@vangsparebank.no","mobil":"+47 93389587","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130051","navn":"Sofie Haugen","firma":"By Sparebank","epost":"sofie.haugen@bysparebank.no","mobil":"+47 93095718","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130052","navn":"Signe Sand","firma":"Bankenes Sikringsfond","epost":"signe.sand@bankenessikringsfond.no","mobil":"+47 99697354","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130053","navn":"Kasper Bakke","firma":"Sør banken","epost":"kasper.bakke@sorbanken.no","mobil":"+47 91356984","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130054","navn":"Grete Nilsen","firma":"Elv Sparebank","epost":"grete.nilsen@elvsparebank.no","mobil":"+47 95966264","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130055","navn":"Petter Kvale","firma":"Ring banken","epost":"petter.kvale@ringbanken.no","mobil":"+47 90422350","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130056","navn":"Vilde Bråten","firma":"Dal Sparebank","epost":"vilde.braten@dalsparebank.no","mobil":"+47 98408575","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130057","navn":"Stian Waage","firma":"Fjell Sparebank","epost":"stian.waage@fjellsparebank.no","mobil":"+47 90568481","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130058","navn":"Signe Mo","firma":"Vekst sparebank","epost":"signe.mo@vekstsparebank.no","mobil":"+47 97554890","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130059","navn":"Astrid Sivertsen","firma":"Trygg banken","epost":"astrid.sivertsen@tryggbanken.no","mobil":"+47 99716856","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130060","navn":"Tobias Rud","firma":"Fjell banken","epost":"tobias.rud@fjellbanken.no","mobil":"+47 95058459","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130061","navn":"Astrid Sæther","firma":"Grend Sparebank","epost":"astrid.saether@grendsparebank.no","mobil":"+47 93175480","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130062","navn":"Julie Fjeld","firma":"Strand sparebank","epost":"julie.fjeld@strandsparebank.no","mobil":"+47 92532690","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130063","navn":"Bjørn Sundby","firma":"Skog Sparebank","epost":"bjorn.sundby@skogsparebank.no","mobil":"+47 91833398","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130064","navn":"Emil Bakke","firma":"Ring Sparebank","epost":"emil.bakke@ringsparebank.no","mobil":"+47 90211683","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130065","navn":"Randi Ås","firma":"Finans Norge","epost":"randi.as@finansnorge.no","mobil":"+47 94969634","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130066","navn":"Nora Solberg","firma":"Dal banken","epost":"nora.solberg@dalbanken.no","mobil":"+47 90092570","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130067","navn":"Arne Ås","firma":"Nordøst banken","epost":"arne.as@nordostbanken.no","mobil":"+47 97065805","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130068","navn":"Halvor Dahl","firma":"Trygg Sparebank","epost":"halvor.dahl@tryggsparebank.no","mobil":"+47 95251508","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130069","navn":"Julie Lien","firma":"Elv sparebank","epost":"julie.lien@elvsparebank.no","mobil":"+47 97636896","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130070","navn":"Torstein Lien","firma":"Sentral sparebank","epost":"torstein.lien@sentralsparebank.no","mobil":"+47 99116066","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130071","navn":"Ole Tveit","firma":"By banken","epost":"ole.tveit@bybanken.no","mobil":"+47 97665670","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130072","navn":"Oskar Kvale","firma":"Innlandet sparebank","epost":"oskar.kvale@innlandetsparebank.no","mobil":"+47 95907677","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130073","navn":"Julie Dahl","firma":"Region Sparebank","epost":"julie.dahl@regionsparebank.no","mobil":"+47 91155865","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130074","navn":"Morten Fossum","firma":"Sørvest banken","epost":"morten.fossum@sorvestbanken.no","mobil":"+47 95924567","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130075","navn":"Inger Aas","firma":"Li Sparebank","epost":"inger.aas@lisparebank.no","mobil":"+47 95951653","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130076","navn":"Emil Tveit","firma":"Region banken","epost":"emil.tveit@regionbanken.no","mobil":"+47 93118712","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130077","navn":"Ingrid Sundby","firma":"Elv Sparebank","epost":"ingrid.sundby@elvsparebank.no","mobil":"+47 91433135","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130078","navn":"Live Bråten","firma":"Bankenes Sikringsfond","epost":"live.braten@bankenessikringsfond.no","mobil":"+47 91430759","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130079","navn":"Marte Sørensen","firma":"Fjord banken","epost":"marte.sorensen@fjordbanken.no","mobil":"+47 94915596","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130080","navn":"Åse Nilsen","firma":"Øst Sparebank","epost":"ase.nilsen@ostsparebank.no","mobil":"+47 96752566","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130081","navn":"Torstein Ås","firma":"Hav sparebank","epost":"torstein.as@havsparebank.no","mobil":"+47 99202319","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":0,"fagkonf":1},{"ref":"1130082","navn":"Frida Karlsen","firma":"Sør banken","epost":"frida.karlsen@sorbanken.no","mobil":"+47 92337708","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130083","navn":"Turid Amundsen","firma":"Vest banken","epost":"turid.amundsen@vestbanken.no","mobil":"+47 98358000","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130084","navn":"Knut Skagen","firma":"Voss banken","epost":"knut.skagen@vossbanken.no","mobil":"+47 97851072","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 16nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130085","navn":"Elise Sivertsen","firma":"Strand sparebank","epost":"elise.sivertsen@strandsparebank.no","mobil":"+47 90478645","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130086","navn":"Torstein Johansen","firma":"Strand banken","epost":"torstein.johansen@strandbanken.no","mobil":"+47 95544128","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130087","navn":"Terje Iversen","firma":"Sentral sparebank","epost":"terje.iversen@sentralsparebank.no","mobil":"+47 92129055","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130088","navn":"Julie Rise","firma":"Kyst Sparebank","epost":"julie.rise@kystsparebank.no","mobil":"+47 97086504","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130089","navn":"Grete Andersen","firma":"Vang Sparebank","epost":"grete.andersen@vangsparebank.no","mobil":"+47 96773460","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130090","navn":"Wenche Skoglund","firma":"Voss banken","epost":"wenche.skoglund@vossbanken.no","mobil":"+47 98257627","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130091","navn":"Rune Nygård","firma":"Eika Gruppen","epost":"rune.nygard@eikagruppen.no","mobil":"+47 95020070","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130092","navn":"Halvor Waage","firma":"Nord sparebank","epost":"halvor.waage@nordsparebank.no","mobil":"+47 99299511","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130093","navn":"Aud Reiten","firma":"Innlandet Sparebank","epost":"aud.reiten@innlandetsparebank.no","mobil":"+47 93186677","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130094","navn":"Åse Grande","firma":"Sol banken","epost":"ase.grande@solbanken.no","mobil":"+47 96308974","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130095","navn":"Njål Grønn","firma":"Nord sparebank","epost":"njal.gronn@nordsparebank.no","mobil":"+47 92917630","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130096","navn":"Oskar Johansen","firma":"Lokal sparebank","epost":"oskar.johansen@lokalsparebank.no","mobil":"+47 90225258","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":0,"fagkonf":1},{"ref":"1130097","navn":"Marte Bråten","firma":"Sørvest banken","epost":"marte.braten@sorvestbanken.no","mobil":"+47 97076373","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130098","navn":"Trond Berg","firma":"Lokal banken","epost":"trond.berg@lokalbanken.no","mobil":"+47 90916335","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":0,"fagkonf":1},{"ref":"1130099","navn":"Torhild Sørensen","firma":"Region Sparebank","epost":"torhild.sorensen@regionsparebank.no","mobil":"+47 99963363","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130100","navn":"Morten Grande","firma":"Lokal banken","epost":"morten.grande@lokalbanken.no","mobil":"+47 93561415","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130101","navn":"Jonas Rasmussen","firma":"Fjord sparebank","epost":"jonas.rasmussen@fjordsparebank.no","mobil":"+47 92041298","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130102","navn":"Elias Eide","firma":"Vest Sparebank","epost":"elias.eide@vestsparebank.no","mobil":"+47 99546063","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130103","navn":"Odd Sundby","firma":"Nord Sparebank","epost":"odd.sundby@nordsparebank.no","mobil":"+47 98356677","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130104","navn":"Linnea Andersen","firma":"Kommunalbanken","epost":"linnea.andersen@kommunalbanken.no","mobil":"+47 91015876","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130105","navn":"Torstein Kristiansen","firma":"Region Sparebank","epost":"torstein.kristiansen@regionsparebank.no","mobil":"+47 98159237","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130106","navn":"Trond Vold","firma":"Strand sparebank","epost":"trond.vold@strandsparebank.no","mobil":"+47 96094585","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130107","navn":"Håkon Iversen","firma":"Berg banken","epost":"hakon.iversen@bergbanken.no","mobil":"+47 95601669","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130108","navn":"Ida Andersen","firma":"Vang banken","epost":"ida.andersen@vangbanken.no","mobil":"+47 90260056","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130109","navn":"Njål Bråten","firma":"Fjell Sparebank","epost":"njal.braten@fjellsparebank.no","mobil":"+47 94413155","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130110","navn":"Randi Fjeld","firma":"Nordøst sparebank","epost":"randi.fjeld@nordostsparebank.no","mobil":"+47 99595027","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130111","navn":"Emil Amundsen","firma":"Strand Sparebank","epost":"emil.amundsen@strandsparebank.no","mobil":"+47 91427129","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130112","navn":"Silje Nygård","firma":"Fjord Sparebank","epost":"silje.nygard@fjordsparebank.no","mobil":"+47 97712779","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130113","navn":"Knut Sand","firma":"Li sparebank","epost":"knut.sand@lisparebank.no","mobil":"+47 99723913","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130114","navn":"Bente Mo","firma":"Sentral banken","epost":"bente.mo@sentralbanken.no","mobil":"+47 93173434","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":0,"fagkonf":1},{"ref":"1130115","navn":"Sander Kristiansen","firma":"Øst banken","epost":"sander.kristiansen@ostbanken.no","mobil":"+47 99694983","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130116","navn":"Tone Grande","firma":"Vekst sparebank","epost":"tone.grande@vekstsparebank.no","mobil":"+47 98275674","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130117","navn":"Julie Vold","firma":"Kommunalbanken","epost":"julie.vold@kommunalbanken.no","mobil":"+47 91371360","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130118","navn":"Trond Skagen","firma":"Fjord Sparebank","epost":"trond.skagen@fjordsparebank.no","mobil":"+47 91578480","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130119","navn":"Elias Reiten","firma":"Region sparebank","epost":"elias.reiten@regionsparebank.no","mobil":"+47 90584016","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130120","navn":"Inger Karlsen","firma":"Heim sparebank","epost":"inger.karlsen@heimsparebank.no","mobil":"+47 91506312","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130121","navn":"Kaja Aune","firma":"Fjell banken","epost":"kaja.aune@fjellbanken.no","mobil":"+47 94292655","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130122","navn":"Sofie Amundsen","firma":"Heim banken","epost":"sofie.amundsen@heimbanken.no","mobil":"+47 98110525","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130123","navn":"Sindre Solberg","firma":"Strand banken","epost":"sindre.solberg@strandbanken.no","mobil":"+47 91768653","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130124","navn":"Kari Vold","firma":"Dal Sparebank","epost":"kari.vold@dalsparebank.no","mobil":"+47 92828255","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130125","navn":"Mathilde Solberg","firma":"Berg sparebank","epost":"mathilde.solberg@bergsparebank.no","mobil":"+47 91305040","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130126","navn":"Marte Grande","firma":"Trygg Sparebank","epost":"marte.grande@tryggsparebank.no","mobil":"+47 91939620","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":0},{"ref":"1130127","navn":"Live Rud","firma":"Fjell banken","epost":"live.rud@fjellbanken.no","mobil":"+47 97572860","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130128","navn":"Odd Solberg","firma":"Vest sparebank","epost":"odd.solberg@vestsparebank.no","mobil":"+47 95612127","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130129","navn":"Jakob Karlsen","firma":"Sør Sparebank","epost":"jakob.karlsen@sorsparebank.no","mobil":"+47 98093938","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130130","navn":"Martin Pedersen","firma":"Sparebankforeningen","epost":"martin.pedersen@sparebankforeningen.no","mobil":"+47 93542652","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130131","navn":"Elise Eide","firma":"Lokal Sparebank","epost":"elise.eide@lokalsparebank.no","mobil":"+47 93995459","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130132","navn":"Stian Aas","firma":"Lokal sparebank","epost":"stian.aas@lokalsparebank.no","mobil":"+47 94924522","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130133","navn":"Erik Aune","firma":"Berg banken","epost":"erik.aune@bergbanken.no","mobil":"+47 90032263","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130134","navn":"Kaja Vold","firma":"Fjell banken","epost":"kaja.vold@fjellbanken.no","mobil":"+47 91329874","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130135","navn":"Njål Sundby","firma":"Sentral Sparebank","epost":"njal.sundby@sentralsparebank.no","mobil":"+47 92299163","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130136","navn":"Halvor Bråten","firma":"Kyst sparebank","epost":"halvor.braten@kystsparebank.no","mobil":"+47 96847167","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130137","navn":"Stein Sand","firma":"Bygde Sparebank","epost":"stein.sand@bygdesparebank.no","mobil":"+47 98271454","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130138","navn":"Jonas Lien","firma":"Sol Sparebank","epost":"jonas.lien@solsparebank.no","mobil":"+47 94467093","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130139","navn":"Oskar Reiten","firma":"Vang Sparebank","epost":"oskar.reiten@vangsparebank.no","mobil":"+47 99645552","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130140","navn":"Espen Sørensen","firma":"Ring sparebank","epost":"espen.sorensen@ringsparebank.no","mobil":"+47 98301425","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130141","navn":"Wenche Berg","firma":"Vekst banken","epost":"wenche.berg@vekstbanken.no","mobil":"+47 91486229","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":0,"fagkonf":1},{"ref":"1130142","navn":"Torstein Strand","firma":"Øst sparebank","epost":"torstein.strand@ostsparebank.no","mobil":"+47 99317398","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130143","navn":"Erik Nilsen","firma":"Kommunalbanken","epost":"erik.nilsen@kommunalbanken.no","mobil":"+47 94385888","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130144","navn":"Njål Waage","firma":"Heim Sparebank","epost":"njal.waage@heimsparebank.no","mobil":"+47 91575485","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130145","navn":"Henrik Skoglund","firma":"Vekst Sparebank","epost":"henrik.skoglund@vekstsparebank.no","mobil":"+47 92039154","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130146","navn":"Marte Halvorsen","firma":"Grend Sparebank","epost":"marte.halvorsen@grendsparebank.no","mobil":"+47 96522054","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130147","navn":"Åse Skagen","firma":"Innlandet Sparebank","epost":"ase.skagen@innlandetsparebank.no","mobil":"+47 95621752","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130148","navn":"Torhild Mo","firma":"Strand Sparebank","epost":"torhild.mo@strandsparebank.no","mobil":"+47 90193852","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130149","navn":"Julie Sørensen","firma":"Øst sparebank","epost":"julie.sorensen@ostsparebank.no","mobil":"+47 90349434","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130150","navn":"Tobias Lien","firma":"Berg sparebank","epost":"tobias.lien@bergsparebank.no","mobil":"+47 94458914","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130151","navn":"Aud Johansen","firma":"Hav sparebank","epost":"aud.johansen@havsparebank.no","mobil":"+47 97276132","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130152","navn":"Henrik Aas","firma":"Sør Sparebank","epost":"henrik.aas@sorsparebank.no","mobil":"+47 91012325","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130153","navn":"Sara Sivertsen","firma":"Nordøst Sparebank","epost":"sara.sivertsen@nordostsparebank.no","mobil":"+47 99165638","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130154","navn":"Inger Hovde","firma":"Heim banken","epost":"inger.hovde@heimbanken.no","mobil":"+47 99203546","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130155","navn":"Inger Amundsen","firma":"Vang Sparebank","epost":"inger.amundsen@vangsparebank.no","mobil":"+47 93167606","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130156","navn":"Signe Kvale","firma":"Sparebankforeningen","epost":"signe.kvale@sparebankforeningen.no","mobil":"+47 92722849","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130157","navn":"Trond Amundsen","firma":"Bygde Sparebank","epost":"trond.amundsen@bygdesparebank.no","mobil":"+47 93626244","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130158","navn":"Sofie Grande","firma":"Innlandet banken","epost":"sofie.grande@innlandetbanken.no","mobil":"+47 97380249","hotel":"QUALITY HOTEL ÅLESUND","rom":"Enkeltrom","hotelStr":"🛌 QUALITY HOTEL ÅLESUND, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130159","navn":"Julie Sørensen","firma":"Vest Sparebank","epost":"julie.sorensen@vestsparebank.no","mobil":"+47 93397261","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130160","navn":"Bente Nilsen","firma":"Grend banken","epost":"bente.nilsen@grendbanken.no","mobil":"+47 97973177","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130161","navn":"Marte Lien","firma":"Voss sparebank","epost":"marte.lien@vosssparebank.no","mobil":"+47 99828672","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130162","navn":"Ivar Kvale","firma":"Grend Sparebank","epost":"ivar.kvale@grendsparebank.no","mobil":"+47 99317254","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130163","navn":"Kari Haugen","firma":"Øst banken","epost":"kari.haugen@ostbanken.no","mobil":"+47 99654160","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":0},{"ref":"1130164","navn":"Signe Dahl","firma":"Nord Sparebank","epost":"signe.dahl@nordsparebank.no","mobil":"+47 94071039","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 16nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130165","navn":"Vilde Rasmussen","firma":"Ring sparebank","epost":"vilde.rasmussen@ringsparebank.no","mobil":"+47 98343936","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130166","navn":"Aud Grande","firma":"Trygg Sparebank","epost":"aud.grande@tryggsparebank.no","mobil":"+47 97601169","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130167","navn":"Kristian Sørensen","firma":"Fjell sparebank","epost":"kristian.sorensen@fjellsparebank.no","mobil":"+47 98403855","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130168","navn":"Grete Reiten","firma":"Hav banken","epost":"grete.reiten@havbanken.no","mobil":"+47 91547577","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130169","navn":"Geir Mo","firma":"Eika Gruppen","epost":"geir.mo@eikagruppen.no","mobil":"+47 95211506","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130170","navn":"Fredrik Fossum","firma":"Lokal banken","epost":"fredrik.fossum@lokalbanken.no","mobil":"+47 98583326","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130171","navn":"Terje Nygård","firma":"Lokal sparebank","epost":"terje.nygard@lokalsparebank.no","mobil":"+47 99478314","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130172","navn":"Espen Reiten","firma":"Elv banken","epost":"espen.reiten@elvbanken.no","mobil":"+47 96902442","hotel":"QUALITY HOTEL ÅLESUND","rom":"Enkeltrom","hotelStr":"🛌 QUALITY HOTEL ÅLESUND, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130173","navn":"Jonas Bråten","firma":"Sør banken","epost":"jonas.braten@sorbanken.no","mobil":"+47 92939270","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130174","navn":"Grete Reiten","firma":"Lokal banken","epost":"grete.reiten@lokalbanken.no","mobil":"+47 98547791","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130175","navn":"Erik Nilsen","firma":"Strand banken","epost":"erik.nilsen@strandbanken.no","mobil":"+47 95936530","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130176","navn":"Astrid Johansen","firma":"Dal banken","epost":"astrid.johansen@dalbanken.no","mobil":"+47 99768674","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130177","navn":"Espen Nygård","firma":"Hav sparebank","epost":"espen.nygard@havsparebank.no","mobil":"+47 90737841","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130178","navn":"Halvor Strand","firma":"Vang Sparebank","epost":"halvor.strand@vangsparebank.no","mobil":"+47 98313980","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130179","navn":"Aksel Grønn","firma":"Fjell Sparebank","epost":"aksel.gronn@fjellsparebank.no","mobil":"+47 98126708","hotel":"HOTEL 1904","rom":"Dobbeltrom","hotelStr":"🛌 HOTEL 1904, Dobbeltrom. Fra 16nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130180","navn":"Aksel Kristiansen","firma":"By sparebank","epost":"aksel.kristiansen@bysparebank.no","mobil":"+47 94683072","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130181","navn":"Rune Solberg","firma":"Fjell banken","epost":"rune.solberg@fjellbanken.no","mobil":"+47 99141338","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130182","navn":"Vegard Aune","firma":"SpareBank 1 Utvikling","epost":"vegard.aune@sparebank1utvikling.no","mobil":"+47 94029625","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130183","navn":"Geir Sand","firma":"Elv banken","epost":"geir.sand@elvbanken.no","mobil":"+47 98469637","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130184","navn":"Vetle Aune","firma":"Grend Sparebank","epost":"vetle.aune@grendsparebank.no","mobil":"+47 92433867","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130185","navn":"Ingrid Holm","firma":"Li sparebank","epost":"ingrid.holm@lisparebank.no","mobil":"+47 91828067","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130186","navn":"Vegard Vold","firma":"Nord sparebank","epost":"vegard.vold@nordsparebank.no","mobil":"+47 96693652","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130187","navn":"Marianne Kvale","firma":"Vest Sparebank","epost":"marianne.kvale@vestsparebank.no","mobil":"+47 95896001","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130188","navn":"Nora Rise","firma":"Elv sparebank","epost":"nora.rise@elvsparebank.no","mobil":"+47 91933267","hotel":"","rom":"","hotelStr":"","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130189","navn":"Åse Sundby","firma":"Sørvest Sparebank","epost":"ase.sundby@sorvestsparebank.no","mobil":"+47 93014389","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130190","navn":"Jarle Karlsen","firma":"Heim banken","epost":"jarle.karlsen@heimbanken.no","mobil":"+47 99651517","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130191","navn":"Ingrid Eide","firma":"Vang banken","epost":"ingrid.eide@vangbanken.no","mobil":"+47 99816744","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130192","navn":"Aksel Grønn","firma":"Vang banken","epost":"aksel.gronn@vangbanken.no","mobil":"+47 93959478","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130193","navn":"Mathilde Andersen","firma":"Øst Sparebank","epost":"mathilde.andersen@ostsparebank.no","mobil":"+47 95210211","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130194","navn":"Tobias Grønn","firma":"Fjell banken","epost":"tobias.gronn@fjellbanken.no","mobil":"+47 97466381","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130195","navn":"Espen Ås","firma":"Eika Gruppen","epost":"espen.as@eikagruppen.no","mobil":"+47 92238064","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130196","navn":"Halvor Reiten","firma":"Region sparebank","epost":"halvor.reiten@regionsparebank.no","mobil":"+47 96047864","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130197","navn":"Vilde Johansen","firma":"Innlandet Sparebank","epost":"vilde.johansen@innlandetsparebank.no","mobil":"+47 95182761","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130198","navn":"Anna Fjeld","firma":"By Sparebank","epost":"anna.fjeld@bysparebank.no","mobil":"+47 90181431","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130199","navn":"Turid Kristiansen","firma":"Grend banken","epost":"turid.kristiansen@grendbanken.no","mobil":"+47 99456534","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130200","navn":"Julie Fossum","firma":"Berg banken","epost":"julie.fossum@bergbanken.no","mobil":"+47 91526184","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130201","navn":"Elin Sundby","firma":"Elv banken","epost":"elin.sundby@elvbanken.no","mobil":"+47 92326202","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130202","navn":"Erik Grande","firma":"Region sparebank","epost":"erik.grande@regionsparebank.no","mobil":"+47 98815359","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130203","navn":"Sindre Sundby","firma":"Bygde Sparebank","epost":"sindre.sundby@bygdesparebank.no","mobil":"+47 95371319","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130204","navn":"Geir Vik","firma":"Dal sparebank","epost":"geir.vik@dalsparebank.no","mobil":"+47 96764948","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130205","navn":"Elias Karlsen","firma":"Skog sparebank","epost":"elias.karlsen@skogsparebank.no","mobil":"+47 98633923","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130206","navn":"Solveig Larsen","firma":"Øst Sparebank","epost":"solveig.larsen@ostsparebank.no","mobil":"+47 99451837","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130207","navn":"Torhild Nygård","firma":"Vekst banken","epost":"torhild.nygard@vekstbanken.no","mobil":"+47 97505203","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130208","navn":"Martin Rise","firma":"Nordic Trustee","epost":"martin.rise@nordictrustee.no","mobil":"+47 99743673","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130209","navn":"Camilla Sørensen","firma":"Dal sparebank","epost":"camilla.sorensen@dalsparebank.no","mobil":"+47 93402761","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130210","navn":"Vetle Lund","firma":"Elv sparebank","epost":"vetle.lund@elvsparebank.no","mobil":"+47 98208709","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130211","navn":"Vegard Sivertsen","firma":"Nordøst banken","epost":"vegard.sivertsen@nordostbanken.no","mobil":"+47 96845545","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":0},{"ref":"1130212","navn":"Odd Vik","firma":"Grend banken","epost":"odd.vik@grendbanken.no","mobil":"+47 96576043","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130213","navn":"Sander Reiten","firma":"Sentral sparebank","epost":"sander.reiten@sentralsparebank.no","mobil":"+47 90965604","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 16nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130214","navn":"Mathilde Andersen","firma":"By sparebank","epost":"mathilde.andersen@bysparebank.no","mobil":"+47 93575790","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130215","navn":"Hanne Eide","firma":"Vang Sparebank","epost":"hanne.eide@vangsparebank.no","mobil":"+47 98803152","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130216","navn":"Turid Johansen","firma":"By banken","epost":"turid.johansen@bybanken.no","mobil":"+47 90572882","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130217","navn":"Jakob Sand","firma":"Nord Sparebank","epost":"jakob.sand@nordsparebank.no","mobil":"+47 94865979","hotel":"SCANDIC PARKEN","rom":"Dobbeltrom","hotelStr":"🛌 SCANDIC PARKEN, Dobbeltrom. Fra 15nov26 til 17nov26.","middag":1,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130218","navn":"Live Vange","firma":"Fjord sparebank","epost":"live.vange@fjordsparebank.no","mobil":"+47 98418385","hotel":"HOTEL 1904","rom":"Enkeltrom","hotelStr":"🛌 HOTEL 1904, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130219","navn":"Emma Johansen","firma":"Innlandet sparebank","epost":"emma.johansen@innlandetsparebank.no","mobil":"+47 97847707","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":1},{"ref":"1130220","navn":"Torhild Sivertsen","firma":"Region Sparebank","epost":"torhild.sivertsen@regionsparebank.no","mobil":"+47 98110739","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1},{"ref":"1130221","navn":"Thea Berg","firma":"Finans Norge","epost":"thea.berg@finansnorge.no","mobil":"+47 90761375","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 17nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":0},{"ref":"1130222","navn":"Martin Skoglund","firma":"Region Sparebank","epost":"martin.skoglund@regionsparebank.no","mobil":"+47 94396765","hotel":"","rom":"","hotelStr":"","middag":0,"stiftelse":0,"festmiddag":1,"fagkonf":0},{"ref":"1130223","navn":"Torhild Reiten","firma":"Vest banken","epost":"torhild.reiten@vestbanken.no","mobil":"+47 95729424","hotel":"SCANDIC PARKEN","rom":"Enkeltrom","hotelStr":"🛌 SCANDIC PARKEN, Enkeltrom. Fra 15nov26 til 18nov26.","middag":0,"stiftelse":1,"festmiddag":1,"fagkonf":1}];
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+let currentSort = { key: null, dir: 1 };
+let currentFilter = '';
+
+function renderTable() {
+  const body = document.getElementById('participantsBody');
+  const q = currentFilter.trim().toLowerCase();
+  let rows = participants.filter(p => {
+    if (!q) return true;
+    return (p.navn + ' ' + p.firma + ' ' + p.epost + ' ' + p.mobil + ' ' + p.hotel + ' ' + p.rom)
+      .toLowerCase().includes(q);
+  });
+
+  if (currentSort.key) {
+    rows = rows.slice().sort((a, b) => {
+      const av = a[currentSort.key], bv = b[currentSort.key];
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * currentSort.dir;
+      return String(av).localeCompare(String(bv), 'no') * currentSort.dir;
+    });
+  }
+
+  document.getElementById('rowCount').textContent = rows.length + ' av ' + participants.length + ' deltagere';
+
+  body.innerHTML = rows.map(p => `
+    <tr>
+      <td>${p.navn}</td>
+      <td>${p.firma}</td>
+      <td>${p.epost}</td>
+      <td>${p.mobil}</td>
+      <td>${p.hotel || '<span style="color:var(--text-muted)">Dagsgjest</span>'}</td>
+      <td>${p.rom || '<span style="color:var(--text-muted)">–</span>'}</td>
+      <td class="num">${p.middag ? '✓' : ''}</td>
+      <td class="num">${p.stiftelse ? '✓' : ''}</td>
+      <td class="num">${p.festmiddag ? '✓' : ''}</td>
+      <td class="num">${p.fagkonf ? '✓' : ''}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  currentFilter = e.target.value;
+  renderTable();
+});
+
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (currentSort.key === key) currentSort.dir *= -1;
+    else { currentSort.key = key; currentSort.dir = 1; }
+    document.querySelectorAll('th[data-sort]').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+    th.classList.add(currentSort.dir === 1 ? 'sort-asc' : 'sort-desc');
+    renderTable();
+  });
+});
+
+renderTable();
+</script>
+
+</body>
+</html>
